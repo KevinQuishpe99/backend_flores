@@ -1,0 +1,30 @@
+# Docker Compose para Backend (independiente)
+# Backend con PostgreSQL integrado
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flores_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5000:5000"  # Backend API
+      - "5432:5432"  # PostgreSQL (opcional, para acceso externo)
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('https://api.paulas.com/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+

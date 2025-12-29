@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  GERENTE
+  EMPLEADO
+  CLIENTE
+}
+
+enum EstadoPedido {
+  PENDIENTE
+  TRANSFERENCIA_VERIFICADA
+  ASIGNADO
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
+}
+
+model Usuario {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String?  // Hash de contraseña (null si solo usa Google)
+  nombre        String
+  apellido      String?
+  imagen        String?
+  googleId      String?  @unique
+  rol           Rol      @default(CLIENTE)
+  telefono      String?  // Obligatorio para CLIENTE
+  direccion     String?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  pedidos       Pedido[] @relation("ClientePedidos")
+  pedidosAsignados Pedido[] @relation("EmpleadoPedidos")
+  arreglos      Arreglo[] @relation("CreadorArreglos")
+  notificaciones Notificacion[] @relation("UsuarioNotificaciones")
+  stockCreado   Stock[] @relation("CreadorStock")
+  stockVendido  Stock[] @relation("VendedorStock")
+  
+  @@map("usuarios")
+}
+
+model TipoArreglo {
+  id            String     @id @default(uuid())
+  nombre        String     @unique
+  descripcion   String?
+  activo        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  arreglos      Arreglo[]
+  
+  @@map("tipos_arreglo")
+}
+
+model Arreglo {
+  id            String     @id @default(uuid())
+  nombre        String
+  descripcion   String?
+  imagen        String
+  imagenEditada String?    // URL de la imagen editada
+  imagenesAdicionales String[] @default([]) // Galería de imágenes adicionales
+  costo         Float
+  disponible    Boolean    @default(true)
+  tipoId        String?    // Tipo de arreglo (centros de mesa, ramos, etc.)
+  tipo          TipoArreglo? @relation(fields: [tipoId], references: [id])
+  creadorId     String?    // Quien creó el arreglo (admin, gerente o empleado) - temporalmente opcional para migración
+  creador       Usuario?   @relation("CreadorArreglos", fields: [creadorId], references: [id])
+  prioridad     Int        @default(0) // Para ordenar pedidos (mayor = más prioritario)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  pedidos       Pedido[]
+  stock         Stock[]
+  
+  @@map("arreglos")
+}
+
+model Pedido {
+  id                String        @id @default(uuid())
+  clienteId         String
+  cliente           Usuario       @relation("ClientePedidos", fields: [clienteId], references: [id])
+  arregloId         String
+  arreglo           Arreglo      @relation(fields: [arregloId], references: [id])
+  empleadoId        String?       // Empleado asignado para preparar (asignado por gerente)
+  empleado          Usuario?      @relation("EmpleadoPedidos", fields: [empleadoId], references: [id])
+  imagenReferencia  String?       // Foto del arreglo deseado
+  horaEntrega       DateTime
+  valorAcordado     Float
+  precioArreglo     Float         // Precio del arreglo al momento de la compra (histórico)
+  extras            Float         @default(0) // Costo de extras adicionales
+  comprobantePago   String?       // URL del comprobante de transferencia inicial
+  comprobantesExtras String[]     @default([]) // URLs de comprobantes de extras
+  transferenciaVerificada Boolean @default(false)
+  verificadaPor     String?       // ID del gerente que verificó
+  estado            EstadoPedido  @default(PENDIENTE)
+  prioridad         Int           @default(0) // Para ordenar pedidos (mayor = más prioritario)
+  notas             String?
+  notasCliente      String?       // Notas adicionales del cliente
+  historialEstado   Json[]        @default([]) // Historial de cambios de estado con timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("pedidos")
+}
+
+model Notificacion {
+  id            String     @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario    @relation("UsuarioNotificaciones", fields: [usuarioId], references: [id])
+  tipo          String     // 'NUEVO_PEDIDO', 'PEDIDO_ASIGNADO', 'RECORDATORIO_ENTREGA', etc.
+  titulo        String
+  mensaje       String
+  leida         Boolean    @default(false)
+  pedidoId      String?    // ID del pedido relacionado (opcional)
+  createdAt     DateTime   @default(now())
+  
+  @@map("notificaciones")
+}
+
+enum EstadoStock {
+  DISPONIBLE
+  VENDIDO
+  RESERVADO
+}
+
+enum MetodoPagoStock {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+}
+
+model Stock {
+  id                String          @id @default(uuid())
+  arregloId         String
+  arreglo           Arreglo         @relation(fields: [arregloId], references: [id])
+  cantidad          Int             @default(1) // Cantidad en stock
+  precioVenta       Float           // Precio de venta al público
+  imagen            String?         // Foto del arreglo físico (no del catálogo)
+  estado            EstadoStock     @default(DISPONIBLE)
+  creadoPorId       String          // Gerente que creó el stock
+  creadoPor         Usuario         @relation("CreadorStock", fields: [creadoPorId], references: [id])
+  vendidoPorId      String?         // Empleado que vendió
+  vendidoPor        Usuario?        @relation("VendedorStock", fields: [vendidoPorId], references: [id])
+  metodoPago        MetodoPagoStock?
+  comprobantePago   String?         // URL del comprobante si es transferencia
+  notas             String?
+  fechaVenta        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@map("stock")
+}
+
+model Configuracion {
+  id                String          @id @default(uuid())
+  clave             String          @unique // 'logo', 'color_primario', etc.
+  valor             String          // Valor de la configuración (URL del logo, código de color, etc.)
+  tipo              String          @default("text") // 'text', 'color', 'image'
+  descripcion       String?
+  updatedBy         String?         // ID del admin que actualizó
+  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime        @default(now())
+  
+  @@map("configuracion")
+}
+
