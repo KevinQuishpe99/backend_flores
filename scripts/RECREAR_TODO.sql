@@ -249,7 +249,7 @@ INSERT INTO "usuarios" (
 ) VALUES (
     gen_random_uuid()::text,
     'admin@flores.com',
-    '$2b$10$rQZ8vK9JX5Y5Y5Y5Y5Y5Yue5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y',
+    '$2a$10$QdR.0xpmQa4LcJ6AyldHbuNZrfHWfCfhSswfRwBr.0siISP2VJ4qy',
     'Administrador',
     'Sistema',
     'ADMIN',
@@ -258,11 +258,9 @@ INSERT INTO "usuarios" (
     CURRENT_TIMESTAMP
 ) ON CONFLICT ("email") DO NOTHING;
 
--- Nota: El hash de la contraseña 'admin123' debe generarse con bcrypt
--- Para generar el hash correcto, usa el script crear_usuario_admin.js
--- o ejecuta en Node.js:
--- const bcrypt = require('bcrypt');
--- bcrypt.hash('admin123', 10).then(hash => console.log(hash));
+-- Nota: El hash de la contraseña 'admin123' es generado con bcrypt
+-- Contraseña: admin123
+-- ⚠️ IMPORTANTE: Cambia la contraseña después del primer inicio de sesión
 
 -- ============================================
 -- 7. VERIFICACIÓN FINAL

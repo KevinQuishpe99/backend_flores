@@ -13,7 +13,8 @@
     "studio": "prisma studio",
     "seed": "node prisma/seed.js",
     "verify:db": "node scripts/verificar_tablas.js",
-    "diagnose:db": "node scripts/diagnostico_bd.js"
+    "diagnose:db": "node scripts/diagnostico_bd.js",
+    "verify:admin": "node scripts/verificar_admin.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -37,7 +38,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
-    "recharts": "^3.6.0"
+    "recharts": "^3.6.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",

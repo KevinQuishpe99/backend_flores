@@ -8,6 +8,7 @@ import {
 } from '../controllers/pedidoController.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
+import { debugUpload } from '../utils/debugUpload.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.post(
     { name: 'imagenReferencia', maxCount: 1 },
     { name: 'comprobantePago', maxCount: 1 },
   ]),
+  debugUpload,
   createPedido
 );
 router.put(

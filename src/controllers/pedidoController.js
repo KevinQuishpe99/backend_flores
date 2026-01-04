@@ -181,14 +181,28 @@ export const createPedido = async (req, res) => {
 
     // Procesar comprobante de pago si existe
     if (req.files?.comprobantePago) {
-      if (cloudinaryConfigured) {
-        comprobantePago = await uploadToCloudinary(req.files.comprobantePago[0].path);
-        await fs.unlink(req.files.comprobantePago[0].path);
-      } else {
-        await fs.unlink(req.files.comprobantePago[0].path);
-        return res.status(500).json({ 
-          error: 'Cloudinary no está configurado. No se pueden subir imágenes.' 
-        });
+      try {
+        if (cloudinaryConfigured) {
+          console.log('📤 Subiendo comprobante de pago a Cloudinary...');
+          comprobantePago = await uploadToCloudinary(req.files.comprobantePago[0].path);
+          console.log('✅ Comprobante subido exitosamente:', comprobantePago);
+          await fs.unlink(req.files.comprobantePago[0].path);
+        } else {
+          console.warn('⚠️  Cloudinary no está configurado');
+          await fs.unlink(req.files.comprobantePago[0].path);
+          return res.status(500).json({ 
+            error: 'Cloudinary no está configurado. No se pueden subir imágenes.' 
+          });
+        }
+      } catch (uploadError) {
+        console.error('❌ Error al subir comprobante:', uploadError);
+        // Limpiar archivo temporal
+        try {
+          await fs.unlink(req.files.comprobantePago[0].path);
+        } catch (unlinkError) {
+          console.error('Error al eliminar archivo temporal:', unlinkError);
+        }
+        throw uploadError;
       }
     }
 
@@ -273,7 +287,18 @@ export const createPedido = async (req, res) => {
     res.status(201).json(pedido);
   } catch (error) {
     console.error('Error al crear pedido:', error);
-    res.status(500).json({ error: 'Error al crear pedido' });
+    console.error('Error completo:', JSON.stringify(error, null, 2));
+    if (error.code) {
+      console.error('Código de error Prisma:', error.code);
+    }
+    res.status(500).json({ 
+      error: 'Error al crear pedido',
+      message: error.message,
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack,
+        code: error.code
+      })
+    });
   }
 };
 

@@ -23,7 +23,18 @@ export const googleLogin = async (req, res) => {
       }
     );
 
-    const { email, name, picture, id: googleId } = userInfoResponse.data;
+    const { email, name, picture, given_name, family_name, id: googleId } = userInfoResponse.data;
+
+    // Parsear nombre y apellido
+    let nombre = given_name || name || '';
+    let apellido = family_name || '';
+    
+    // Si no hay given_name/family_name, intentar separar el name
+    if (!given_name && name) {
+      const nameParts = name.trim().split(/\s+/);
+      nombre = nameParts[0] || '';
+      apellido = nameParts.slice(1).join(' ') || '';
+    }
 
     let usuario = await prisma.usuario.findUnique({
       where: { googleId },
@@ -36,10 +47,17 @@ export const googleLogin = async (req, res) => {
       });
 
       if (existingUser) {
-        // Actualizar usuario existente con googleId (sin cambiar la imagen)
+        // Actualizar usuario existente con googleId e imagen de Google
         usuario = await prisma.usuario.update({
           where: { email },
-          data: { googleId }, // No usar imagen de Google
+          data: { 
+            googleId,
+            // Actualizar imagen solo si no tiene una
+            imagen: existingUser.imagen || picture || null,
+            // Actualizar nombre y apellido si están vacíos
+            nombre: existingUser.nombre || nombre,
+            apellido: existingUser.apellido || apellido,
+          },
         });
       } else {
         // Crear nuevo usuario - requiere teléfono para clientes
@@ -48,13 +66,14 @@ export const googleLogin = async (req, res) => {
         // Si no hay teléfono, crear usuario pero marcar que necesita completar perfil
         if (!telefono || telefono.trim() === '') {
           // Crear usuario sin teléfono pero requerir que lo complete después
-          // No usar imagen de Google, se usará imagen por defecto basada en el nombre
+          // Usar imagen de Google si está disponible
           usuario = await prisma.usuario.create({
             data: {
               email,
-              nombre: name,
+              nombre,
+              apellido,
               googleId,
-              imagen: null, // No usar imagen de Google
+              imagen: picture || null, // Usar imagen de Google
               rol: 'CLIENTE',
               telefono: null, // Temporalmente null, debe completarse
             },
@@ -81,31 +100,61 @@ export const googleLogin = async (req, res) => {
         usuario = await prisma.usuario.create({
           data: {
             email,
-            nombre: name,
+            nombre,
+            apellido,
             googleId,
-            imagen: null, // No usar imagen de Google
+            imagen: picture || null, // Usar imagen de Google
             rol: 'CLIENTE',
             telefono: telefono.trim(),
           },
         });
       }
     } else {
-      // Usuario existente, no actualizar imagen de Google
-      // El usuario puede actualizar su imagen desde el perfil
+      // Usuario existente - actualizar datos de Google si están vacíos o si no tiene imagen
+      const updateData = {};
+      
+      // Actualizar imagen si no tiene una
+      if (!usuario.imagen && picture) {
+        updateData.imagen = picture;
+      }
+      
+      // Actualizar nombre si está vacío
+      if (!usuario.nombre && nombre) {
+        updateData.nombre = nombre;
+      }
+      
+      // Actualizar apellido si está vacío
+      if (!usuario.apellido && apellido) {
+        updateData.apellido = apellido;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        usuario = await prisma.usuario.update({
+          where: { id: usuario.id },
+          data: updateData,
+        });
+      }
       
       // Si es cliente y no tiene teléfono, requerir que lo complete
       if (usuario.rol === 'CLIENTE' && (!usuario.telefono || usuario.telefono.trim() === '')) {
         const jwtToken = generateToken(usuario.id);
+        
+        // Obtener usuario completo con datos actualizados
+        const usuarioCompleto = await prisma.usuario.findUnique({
+          where: { id: usuario.id },
+        });
+        
         return res.status(200).json({
           token: jwtToken,
           user: {
-            id: usuario.id,
-            email: usuario.email,
-            nombre: usuario.nombre,
-            apellido: usuario.apellido,
-            imagen: usuario.imagen,
-            rol: usuario.rol,
-            telefono: usuario.telefono,
+            id: usuarioCompleto.id,
+            email: usuarioCompleto.email,
+            nombre: usuarioCompleto.nombre,
+            apellido: usuarioCompleto.apellido,
+            imagen: usuarioCompleto.imagen,
+            rol: usuarioCompleto.rol,
+            telefono: usuarioCompleto.telefono,
+            direccion: usuarioCompleto.direccion,
           },
           requiereTelefono: true,
           mensaje: 'Por favor, completa tu número de teléfono en tu perfil'
@@ -114,17 +163,33 @@ export const googleLogin = async (req, res) => {
     }
 
     const jwtToken = generateToken(usuario.id);
+    
+    // Obtener usuario completo para asegurar que tenemos todos los datos actualizados
+    const usuarioCompleto = await prisma.usuario.findUnique({
+      where: { id: usuario.id },
+    });
+
+    // Log para debugging
+    console.log('✅ Usuario autenticado:', {
+      id: usuarioCompleto.id,
+      nombre: usuarioCompleto.nombre,
+      apellido: usuarioCompleto.apellido,
+      email: usuarioCompleto.email,
+      imagen: usuarioCompleto.imagen ? '✅ Presente' : '❌ Sin imagen',
+      rol: usuarioCompleto.rol
+    });
 
     res.json({
       token: jwtToken,
       user: {
-        id: usuario.id,
-        email: usuario.email,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        imagen: usuario.imagen,
-        rol: usuario.rol,
-        telefono: usuario.telefono,
+        id: usuarioCompleto.id,
+        email: usuarioCompleto.email,
+        nombre: usuarioCompleto.nombre,
+        apellido: usuarioCompleto.apellido,
+        imagen: usuarioCompleto.imagen,
+        rol: usuarioCompleto.rol,
+        telefono: usuarioCompleto.telefono,
+        direccion: usuarioCompleto.direccion,
       },
     });
   } catch (error) {
@@ -277,6 +342,11 @@ export const login = async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, usuario.password);
 
     if (!isValidPassword) {
+      // Log en desarrollo para debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Contraseña inválida para:', email);
+        console.log('   Hash almacenado:', usuario.password?.substring(0, 20) + '...');
+      }
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
