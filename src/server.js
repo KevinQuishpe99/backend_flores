@@ -39,6 +39,8 @@ const allowedOrigins = NODE_ENV === 'production'
       FRONTEND_URL.replace('https://', 'http://'), // Por si acaso
       `https://${process.env.DOMAIN || 'flowerspaulas.com'}`,
       `http://${process.env.DOMAIN || 'flowerspaulas.com'}`,
+      'https://flowerspaulas.vercel.app', // Frontend en Vercel
+      'https://www.flowerspaulas.com', // Con www
     ]
   : [
       'http://localhost:5173',
@@ -75,9 +77,11 @@ app.use('/api/', limiter);
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5, // solo 5 intentos de login por 15 minutos
+  max: 20, // 20 intentos de login por 15 minutos (aumentado para evitar 429)
   message: 'Demasiados intentos de inicio de sesión, intenta de nuevo más tarde.',
   skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.use('/api/auth/login', authLimiter);
@@ -110,8 +114,11 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  Origen no permitido por CORS: ${origin}`);
-      console.warn(`   Orígenes permitidos:`, allowedOrigins);
+      // Log solo en desarrollo para no llenar logs
+      if (NODE_ENV === 'development') {
+        console.warn(`⚠️  Origen no permitido por CORS: ${origin}`);
+        console.warn(`   Orígenes permitidos:`, allowedOrigins);
+      }
       callback(new Error('No permitido por CORS'));
     }
   },
