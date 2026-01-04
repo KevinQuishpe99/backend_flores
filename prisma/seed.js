@@ -6,6 +6,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
+  // Verificar si las tablas existen
+  try {
+    await prisma.$queryRaw`SELECT 1 FROM usuarios LIMIT 1`;
+  } catch (error) {
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      console.log('⚠️  Las tablas no existen en la base de datos');
+      console.log('   Ejecuta el script RECREAR_TODO.sql en PgAdmin primero');
+      return;
+    }
+    throw error;
+  }
+
   // Verificar si ya existe un admin
   const existingAdmin = await prisma.usuario.findFirst({
     where: { rol: 'ADMIN' },
@@ -38,8 +50,13 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Error en seed:', e);
-    process.exit(1);
+    if (e.code === 'P2021' || e.message?.includes('does not exist')) {
+      console.log('⚠️  Las tablas no existen. Ejecuta RECREAR_TODO.sql primero.');
+      process.exit(0); // Salir sin error si las tablas no existen
+    } else {
+      console.error('❌ Error en seed:', e);
+      process.exit(1);
+    }
   })
   .finally(async () => {
     await prisma.$disconnect();

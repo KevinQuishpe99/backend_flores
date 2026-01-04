@@ -128,7 +128,18 @@ export const googleLogin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error en googleLogin:', error);
+    // No mostrar errores si las tablas no existen (P2021)
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      return res.status(503).json({ 
+        error: 'Base de datos no configurada. Por favor, ejecuta RECREAR_TODO.sql primero.' 
+      });
+    }
+    // Solo mostrar errores detallados en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error en googleLogin:', error);
+    } else {
+      console.error('Error en googleLogin');
+    }
     res.status(500).json({ error: 'Error en autenticación con Google' });
   }
 };
@@ -224,7 +235,18 @@ export const register = async (req, res) => {
       user: usuario,
     });
   } catch (error) {
-    console.error('Error en register:', error);
+    // No mostrar errores si las tablas no existen (P2021)
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      return res.status(503).json({ 
+        error: 'Base de datos no configurada. Por favor, ejecuta RECREAR_TODO.sql primero.' 
+      });
+    }
+    // Solo mostrar errores detallados en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error en register:', error);
+    } else {
+      console.error('Error en register');
+    }
     res.status(500).json({ error: 'Error al registrar usuario' });
   }
 };
@@ -276,7 +298,18 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    // No mostrar errores si las tablas no existen (P2021)
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      return res.status(503).json({ 
+        error: 'Base de datos no configurada. Por favor, ejecuta RECREAR_TODO.sql primero.' 
+      });
+    }
+    // Solo mostrar errores detallados en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error en login:', error);
+    } else {
+      console.error('Error en login');
+    }
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 };

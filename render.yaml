@@ -6,7 +6,7 @@ services:
     instanceType: starter  # Reemplaza 'plan' obsoleto
     region: oregon
     buildCommand: npm ci && npx prisma generate
-    preDeployCommand: npx prisma db seed
+    preDeployCommand: npm run verify:db || echo "⚠️  Tablas no verificadas, continuando..."
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

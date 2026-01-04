@@ -11,7 +11,8 @@
     "migrate:deploy": "prisma migrate deploy",
     "generate": "prisma generate",
     "studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "verify:db": "node scripts/verificar_tablas.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

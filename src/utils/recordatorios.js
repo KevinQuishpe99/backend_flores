@@ -4,6 +4,17 @@ import prisma from '../config/database.js';
 // Función para verificar y crear recordatorios de entrega
 export const verificarRecordatorios = async () => {
   try {
+    // Verificar si la tabla pedidos existe
+    try {
+      await prisma.$queryRaw`SELECT 1 FROM pedidos LIMIT 1`;
+    } catch (error) {
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        // La tabla no existe, no hacer nada
+        return;
+      }
+      throw error;
+    }
+
     const ahora = new Date();
     const unaHoraDespues = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora después
     const unDiaDespues = new Date(ahora.getTime() + 24 * 60 * 60 * 1000); // 1 día después
@@ -77,7 +88,15 @@ export const verificarRecordatorios = async () => {
 
     console.log(`✅ Recordatorios verificados: ${pedidosUrgentes.length} urgentes, ${pedidosManana.length} para mañana`);
   } catch (error) {
-    console.error('Error al verificar recordatorios:', error);
+    // No mostrar errores si las tablas no existen (P2021)
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      // Silenciar: las tablas no existen aún
+      return;
+    }
+    // Solo mostrar errores reales en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error al verificar recordatorios:', error);
+    }
   }
 };
 

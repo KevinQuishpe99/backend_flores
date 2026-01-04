@@ -36,6 +36,10 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
     # Configurar PostgreSQL
     echo "host all all 0.0.0.0/0 scram-sha-256" >> "$PGDATA/pg_hba.conf"
     echo "listen_addresses='*'" >> "$PGDATA/postgresql.conf"
+    # Reducir logs de warnings (especialmente "invalid length of startup packet")
+    echo "log_min_messages = 'error'" >> "$PGDATA/postgresql.conf"
+    echo "log_connections = off" >> "$PGDATA/postgresql.conf"
+    echo "log_disconnections = off" >> "$PGDATA/postgresql.conf"
     
     # Iniciar PostgreSQL como usuario postgres
     chown -R postgres:postgres "$PGDATA"
