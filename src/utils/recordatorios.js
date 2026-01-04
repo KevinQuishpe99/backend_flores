@@ -6,7 +6,7 @@ export const verificarRecordatorios = async () => {
   try {
     // Verificar si la tabla pedidos existe
     try {
-      await prisma.$queryRaw`SELECT 1 FROM pedidos LIMIT 1`;
+      await prisma.$queryRaw`SELECT 1 FROM "public"."pedidos" LIMIT 1`;
     } catch (error) {
       if (error.code === 'P2021' || error.message?.includes('does not exist')) {
         // La tabla no existe, no hacer nada

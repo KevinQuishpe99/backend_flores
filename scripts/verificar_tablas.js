@@ -31,8 +31,8 @@ async function verificarTablas() {
     // Verificar cada tabla
     for (const tabla of tablasRequeridas) {
       try {
-        // Intentar hacer una consulta simple
-        await prisma.$queryRawUnsafe(`SELECT 1 FROM "${tabla}" LIMIT 1`);
+        // Intentar hacer una consulta simple (especificar esquema public explícitamente)
+        await prisma.$queryRawUnsafe(`SELECT 1 FROM "public"."${tabla}" LIMIT 1`);
         tablasExistentes.push(tabla);
         console.log(`✅ Tabla "${tabla}" existe`);
       } catch (error) {

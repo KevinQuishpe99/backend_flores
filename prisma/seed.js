@@ -8,7 +8,7 @@ async function main() {
 
   // Verificar si las tablas existen
   try {
-    await prisma.$queryRaw`SELECT 1 FROM usuarios LIMIT 1`;
+    await prisma.$queryRaw`SELECT 1 FROM "public"."usuarios" LIMIT 1`;
   } catch (error) {
     if (error.code === 'P2021' || error.message?.includes('does not exist')) {
       console.log('⚠️  Las tablas no existen en la base de datos');

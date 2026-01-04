@@ -12,7 +12,8 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "seed": "node prisma/seed.js",
-    "verify:db": "node scripts/verificar_tablas.js"
+    "verify:db": "node scripts/verificar_tablas.js",
+    "diagnose:db": "node scripts/diagnostico_bd.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

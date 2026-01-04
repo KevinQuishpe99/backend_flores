@@ -40,6 +40,9 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
     echo "log_min_messages = 'error'" >> "$PGDATA/postgresql.conf"
     echo "log_connections = off" >> "$PGDATA/postgresql.conf"
     echo "log_disconnections = off" >> "$PGDATA/postgresql.conf"
+    echo "log_min_error_statement = 'error'" >> "$PGDATA/postgresql.conf"
+    echo "log_min_duration_statement = -1" >> "$PGDATA/postgresql.conf"
+    echo "logging_collector = off" >> "$PGDATA/postgresql.conf"
     
     # Iniciar PostgreSQL como usuario postgres
     chown -R postgres:postgres "$PGDATA"
