@@ -29,8 +29,9 @@ const app = express();
 const PORT = process.env.PORT || 5000; // Render/Railway usan PORT automáticamente
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configurar trust proxy para Render/Railway (necesario para rate limiting y IPs correctas)
-app.set('trust proxy', true);
+// Configurar trust proxy para Render/Railway (solo confiar en 1 nivel de proxy)
+// Esto es más seguro que 'true' y evita el warning de express-rate-limit
+app.set('trust proxy', 1);
 
 // Configuración de CORS según el ambiente
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost';
@@ -44,6 +45,7 @@ const allowedOrigins = NODE_ENV === 'production'
       `http://${process.env.DOMAIN || 'flowerspaulas.com'}`,
       'https://flowerspaulas.vercel.app', // Frontend en Vercel
       'https://www.flowerspaulas.com', // Con www
+      /^https:\/\/flowerspaulas-.*\.vercel\.app$/, // URLs de preview de Vercel
     ]
   : [
       'http://localhost:5173',
