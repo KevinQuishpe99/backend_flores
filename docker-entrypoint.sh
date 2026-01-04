@@ -81,12 +81,12 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-# Ejecutar migraciones
-echo "Ejecutando migraciones de Prisma..."
+# Generar cliente de Prisma (sin migraciones, la BD se crea manualmente)
+echo "Generando cliente de Prisma..."
 export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=public"
-npx prisma migrate deploy || true
+npx prisma generate || true
 
-# Ejecutar seed para crear usuario admin
+# Ejecutar seed para crear usuario admin (opcional, si la BD ya tiene tablas)
 echo "Ejecutando seed para crear usuario admin..."
 npx prisma db seed || true
 

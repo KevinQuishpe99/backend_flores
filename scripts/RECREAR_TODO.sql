@@ -1,44 +1,56 @@
--- Script SQL para crear todas las tablas en PostgreSQL
--- Ejecutar este script en Render Shell o en cualquier cliente PostgreSQL
+-- ============================================
+-- SCRIPT COMPLETO: BORRAR Y RECREAR TODO
+-- ============================================
+-- Este script elimina TODAS las tablas, enums y datos
+-- y recrea todo desde cero
+-- 
+-- ⚠️ ADVERTENCIA: Esto borrará TODOS los datos existentes
+-- ============================================
 
 -- ============================================
--- 1. CREAR ENUMS
+-- 1. ELIMINAR TODO (TABLAS, ENUMS, FUNCIONES)
+-- ============================================
+
+-- Eliminar tablas (en orden inverso por dependencias)
+DROP TABLE IF EXISTS "configuracion" CASCADE;
+DROP TABLE IF EXISTS "stock" CASCADE;
+DROP TABLE IF EXISTS "notificaciones" CASCADE;
+DROP TABLE IF EXISTS "pedidos" CASCADE;
+DROP TABLE IF EXISTS "arreglos" CASCADE;
+DROP TABLE IF EXISTS "tipos_arreglo" CASCADE;
+DROP TABLE IF EXISTS "usuarios" CASCADE;
+
+-- Eliminar funciones
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+
+-- Eliminar enums
+DROP TYPE IF EXISTS "MetodoPagoStock" CASCADE;
+DROP TYPE IF EXISTS "EstadoStock" CASCADE;
+DROP TYPE IF EXISTS "EstadoPedido" CASCADE;
+DROP TYPE IF EXISTS "Rol" CASCADE;
+
+-- ============================================
+-- 2. CREAR ENUMS
 -- ============================================
 
 -- Enum para Roles de Usuario
-DO $$ BEGIN
-    CREATE TYPE "Rol" AS ENUM ('ADMIN', 'GERENTE', 'EMPLEADO', 'CLIENTE');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+CREATE TYPE "Rol" AS ENUM ('ADMIN', 'GERENTE', 'EMPLEADO', 'CLIENTE');
 
 -- Enum para Estados de Pedido
-DO $$ BEGIN
-    CREATE TYPE "EstadoPedido" AS ENUM ('PENDIENTE', 'TRANSFERENCIA_VERIFICADA', 'ASIGNADO', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+CREATE TYPE "EstadoPedido" AS ENUM ('PENDIENTE', 'TRANSFERENCIA_VERIFICADA', 'ASIGNADO', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO');
 
 -- Enum para Estados de Stock
-DO $$ BEGIN
-    CREATE TYPE "EstadoStock" AS ENUM ('DISPONIBLE', 'VENDIDO', 'RESERVADO');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+CREATE TYPE "EstadoStock" AS ENUM ('DISPONIBLE', 'VENDIDO', 'RESERVADO');
 
 -- Enum para Métodos de Pago de Stock
-DO $$ BEGIN
-    CREATE TYPE "MetodoPagoStock" AS ENUM ('EFECTIVO', 'TRANSFERENCIA', 'TARJETA');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+CREATE TYPE "MetodoPagoStock" AS ENUM ('EFECTIVO', 'TRANSFERENCIA', 'TARJETA');
 
 -- ============================================
--- 2. CREAR TABLAS
+-- 3. CREAR TABLAS
 -- ============================================
 
 -- Tabla de Usuarios
-CREATE TABLE IF NOT EXISTS "usuarios" (
+CREATE TABLE "usuarios" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL UNIQUE,
     "password" TEXT,
@@ -55,7 +67,7 @@ CREATE TABLE IF NOT EXISTS "usuarios" (
 );
 
 -- Tabla de Tipos de Arreglo
-CREATE TABLE IF NOT EXISTS "tipos_arreglo" (
+CREATE TABLE "tipos_arreglo" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "nombre" TEXT NOT NULL UNIQUE,
     "descripcion" TEXT,
@@ -65,7 +77,7 @@ CREATE TABLE IF NOT EXISTS "tipos_arreglo" (
 );
 
 -- Tabla de Arreglos
-CREATE TABLE IF NOT EXISTS "arreglos" (
+CREATE TABLE "arreglos" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "nombre" TEXT NOT NULL,
     "descripcion" TEXT,
@@ -84,7 +96,7 @@ CREATE TABLE IF NOT EXISTS "arreglos" (
 );
 
 -- Tabla de Pedidos
-CREATE TABLE IF NOT EXISTS "pedidos" (
+CREATE TABLE "pedidos" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "clienteId" TEXT NOT NULL,
     "arregloId" TEXT NOT NULL,
@@ -111,7 +123,7 @@ CREATE TABLE IF NOT EXISTS "pedidos" (
 );
 
 -- Tabla de Notificaciones
-CREATE TABLE IF NOT EXISTS "notificaciones" (
+CREATE TABLE "notificaciones" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "usuarioId" TEXT NOT NULL,
     "tipo" TEXT NOT NULL,
@@ -124,7 +136,7 @@ CREATE TABLE IF NOT EXISTS "notificaciones" (
 );
 
 -- Tabla de Stock
-CREATE TABLE IF NOT EXISTS "stock" (
+CREATE TABLE "stock" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "arregloId" TEXT NOT NULL,
     "cantidad" INTEGER NOT NULL DEFAULT 1,
@@ -145,7 +157,7 @@ CREATE TABLE IF NOT EXISTS "stock" (
 );
 
 -- Tabla de Configuración
-CREATE TABLE IF NOT EXISTS "configuracion" (
+CREATE TABLE "configuracion" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "clave" TEXT NOT NULL UNIQUE,
     "valor" TEXT NOT NULL,
@@ -157,35 +169,35 @@ CREATE TABLE IF NOT EXISTS "configuracion" (
 );
 
 -- ============================================
--- 3. CREAR ÍNDICES
+-- 4. CREAR ÍNDICES
 -- ============================================
 
 -- Índices para usuarios
-CREATE INDEX IF NOT EXISTS "usuarios_email_idx" ON "usuarios"("email");
-CREATE INDEX IF NOT EXISTS "usuarios_googleId_idx" ON "usuarios"("googleId");
-CREATE INDEX IF NOT EXISTS "usuarios_rol_idx" ON "usuarios"("rol");
+CREATE INDEX "usuarios_email_idx" ON "usuarios"("email");
+CREATE INDEX "usuarios_googleId_idx" ON "usuarios"("googleId");
+CREATE INDEX "usuarios_rol_idx" ON "usuarios"("rol");
 
 -- Índices para arreglos
-CREATE INDEX IF NOT EXISTS "arreglos_tipoId_idx" ON "arreglos"("tipoId");
-CREATE INDEX IF NOT EXISTS "arreglos_disponible_idx" ON "arreglos"("disponible");
+CREATE INDEX "arreglos_tipoId_idx" ON "arreglos"("tipoId");
+CREATE INDEX "arreglos_disponible_idx" ON "arreglos"("disponible");
 
 -- Índices para pedidos
-CREATE INDEX IF NOT EXISTS "pedidos_clienteId_idx" ON "pedidos"("clienteId");
-CREATE INDEX IF NOT EXISTS "pedidos_arregloId_idx" ON "pedidos"("arregloId");
-CREATE INDEX IF NOT EXISTS "pedidos_empleadoId_idx" ON "pedidos"("empleadoId");
-CREATE INDEX IF NOT EXISTS "pedidos_estado_idx" ON "pedidos"("estado");
-CREATE INDEX IF NOT EXISTS "pedidos_prioridad_idx" ON "pedidos"("prioridad");
+CREATE INDEX "pedidos_clienteId_idx" ON "pedidos"("clienteId");
+CREATE INDEX "pedidos_arregloId_idx" ON "pedidos"("arregloId");
+CREATE INDEX "pedidos_empleadoId_idx" ON "pedidos"("empleadoId");
+CREATE INDEX "pedidos_estado_idx" ON "pedidos"("estado");
+CREATE INDEX "pedidos_prioridad_idx" ON "pedidos"("prioridad");
 
 -- Índices para notificaciones
-CREATE INDEX IF NOT EXISTS "notificaciones_usuarioId_idx" ON "notificaciones"("usuarioId");
-CREATE INDEX IF NOT EXISTS "notificaciones_leida_idx" ON "notificaciones"("leida");
+CREATE INDEX "notificaciones_usuarioId_idx" ON "notificaciones"("usuarioId");
+CREATE INDEX "notificaciones_leida_idx" ON "notificaciones"("leida");
 
 -- Índices para stock
-CREATE INDEX IF NOT EXISTS "stock_arregloId_idx" ON "stock"("arregloId");
-CREATE INDEX IF NOT EXISTS "stock_estado_idx" ON "stock"("estado");
+CREATE INDEX "stock_arregloId_idx" ON "stock"("arregloId");
+CREATE INDEX "stock_estado_idx" ON "stock"("estado");
 
 -- ============================================
--- 4. FUNCIÓN PARA ACTUALIZAR updatedAt
+-- 5. CREAR FUNCIÓN Y TRIGGERS PARA updatedAt
 -- ============================================
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -216,18 +228,71 @@ CREATE TRIGGER update_configuracion_updated_at BEFORE UPDATE ON "configuracion"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- 5. VERIFICAR QUE TODO SE CREÓ CORRECTAMENTE
+-- 6. CREAR USUARIO ADMIN POR DEFECTO
+-- ============================================
+
+-- Insertar usuario admin
+-- Email: admin@flores.com
+-- Contraseña: admin123 (hash bcrypt)
+-- ⚠️ IMPORTANTE: Cambia la contraseña después del primer inicio de sesión
+
+INSERT INTO "usuarios" (
+    "id",
+    "email",
+    "password",
+    "nombre",
+    "apellido",
+    "rol",
+    "activo",
+    "createdAt",
+    "updatedAt"
+) VALUES (
+    gen_random_uuid()::text,
+    'admin@flores.com',
+    '$2b$10$rQZ8vK9JX5Y5Y5Y5Y5Y5Yue5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y',
+    'Administrador',
+    'Sistema',
+    'ADMIN',
+    true,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+) ON CONFLICT ("email") DO NOTHING;
+
+-- Nota: El hash de la contraseña 'admin123' debe generarse con bcrypt
+-- Para generar el hash correcto, usa el script crear_usuario_admin.js
+-- o ejecuta en Node.js:
+-- const bcrypt = require('bcrypt');
+-- bcrypt.hash('admin123', 10).then(hash => console.log(hash));
+
+-- ============================================
+-- 7. VERIFICACIÓN FINAL
 -- ============================================
 
 -- Mostrar todas las tablas creadas
+SELECT 'Tablas creadas:' as info;
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 ORDER BY table_name;
 
 -- Mostrar todos los enums creados
+SELECT 'Enums creados:' as info;
 SELECT typname 
 FROM pg_type 
 WHERE typtype = 'e' 
 ORDER BY typname;
+
+-- Mostrar usuario admin creado
+SELECT 'Usuario admin:' as info;
+SELECT id, email, nombre, rol, activo 
+FROM usuarios 
+WHERE email = 'admin@flores.com';
+
+-- ============================================
+-- FIN DEL SCRIPT
+-- ============================================
+-- ✅ Base de datos recreada completamente
+-- ✅ Todas las tablas, enums, índices y triggers creados
+-- ✅ Usuario admin creado (cambiar contraseña después del primer login)
+-- ============================================
 

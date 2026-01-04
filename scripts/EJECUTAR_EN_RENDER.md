@@ -25,12 +25,13 @@ psql $DATABASE_URL -f scripts/crear_base_datos.sql
 3. Pégalo en el Shell de Render
 4. Presiona Enter
 
-**Opción C: Usar Prisma (Recomendado)**
+**Opción C: Usar Script SQL Manual (Recomendado ahora)**
 
-```bash
-# Ejecutar migraciones (crea las tablas)
-npx prisma migrate deploy
-```
+Ejecuta el script `RECREAR_TODO.sql` desde PgAdmin o Render Shell.
+
+**NOTA: Las migraciones de Prisma han sido eliminadas. Usa el script SQL manual.**
+
+**Ejecuta el script `RECREAR_TODO.sql` en PgAdmin o Render Shell:**
 
 ### Paso 3: Crear Usuario Admin
 
@@ -70,9 +71,7 @@ Después de ejecutar los scripts:
 ## 🎯 Comandos Rápidos (Copia y Pega)
 
 ```bash
-# 1. Crear tablas
-npx prisma migrate deploy
-
+# 1. Crear tablas (ejecuta RECREAR_TODO.sql en PgAdmin primero)
 # 2. Crear usuario admin
 npx prisma db seed
 
@@ -80,10 +79,14 @@ npx prisma db seed
 psql $DATABASE_URL -c "\dt"
 ```
 
-## 📝 Archivos Creados
+## 📝 Archivos Disponibles
 
-- ✅ `backend/scripts/crear_base_datos.sql` - Script SQL completo
+- ✅ `backend/scripts/RECREAR_TODO.sql` - Script SQL completo (BORRAR Y RECREAR TODO)
 - ✅ `backend/scripts/crear_usuario_admin.js` - Script Node.js para crear admin
-- ✅ `backend/scripts/README_SCRIPTS.md` - Documentación completa
-- ✅ `backend/scripts/EJECUTAR_EN_RENDER.md` - Esta guía rápida
+- ✅ `backend/scripts/USAR_SCRIPT_MANUAL.md` - Guía para usar script manualmente
+- ✅ `backend/scripts/README.md` - Documentación de scripts
+
+## ⚠️ IMPORTANTE
+
+**Las migraciones de Prisma han sido eliminadas.** Debes crear la base de datos manualmente usando `RECREAR_TODO.sql` en PgAdmin.
 
