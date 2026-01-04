@@ -1,0 +1,48 @@
+# Render Blueprint para Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: flores-backend
+    env: node
+    plan: starter # o free, starter, standard, pro
+    region: oregon # oregon, frankfurt, singapore, mumbai, tokyo
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000 # Render usa el puerto de la variable PORT
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flores-db
+          property: connectionString
+        # O configura manualmente:
+        # value: postgresql://flores_user:HF8ZPddSfZfzJXIkLVkrkJ53t7uLAf8K@dpg-d5cuhemr433s73a5bog0-a/flores_db_osjg
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://flowerspaulas.vercel.app # URL de Vercel (o https://flowerspaulas.com si configuraste dominio personalizado)
+      - key: DOMAIN
+        value: flowerspaulas.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false # Configurar manualmente en el dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false # Configurar manualmente en el dashboard
+      - key: CLOUDINARY_URL
+        sync: false # Configurar manualmente en el dashboard
+      # O usar variables individuales de Cloudinary:
+      # - key: CLOUDINARY_CLOUD_NAME
+      #   sync: false
+      # - key: CLOUDINARY_API_KEY
+      #   sync: false
+      # - key: CLOUDINARY_API_SECRET
+      #   sync: false
+
+databases:
+  - name: flores-db
+    plan: starter # o free, starter, standard, pro
+    databaseName: flores_db
+    user: flores_user
+

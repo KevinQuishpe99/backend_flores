@@ -26,7 +26,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000; // Render/Railway usan PORT automáticamente
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Configuración de CORS según el ambiente
