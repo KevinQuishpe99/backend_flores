@@ -84,34 +84,45 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
 // CORS
-if (NODE_ENV === 'development') {
-  // En desarrollo, permitir todos los orígenes (más permisivo)
-  app.use(cors({
-    origin: true, // Permitir cualquier origen en desarrollo
-    credentials: true,
-  }));
-} else {
-  // En producción, usar la lista de orígenes permitidos
-  app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      
-      const isAllowed = allowedOrigins.some(allowed => {
-        if (typeof allowed === 'string') {
-          return origin === allowed;
-        }
-        return allowed.test(origin);
-      });
-      
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error('No permitido por CORS'));
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origen (mobile apps, Postman, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // En desarrollo, permitir todos los orígenes
+    if (NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // En producción, verificar contra la lista de orígenes permitidos
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
       }
-    },
-    credentials: true,
-  }));
-}
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  Origen no permitido por CORS: ${origin}`);
+      console.warn(`   Orígenes permitidos:`, allowedOrigins);
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 horas
+};
+
+app.use(cors(corsOptions));
 
 // Body parsers
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

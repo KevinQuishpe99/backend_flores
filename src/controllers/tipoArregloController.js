@@ -14,7 +14,21 @@ export const getTiposArreglo = async (req, res) => {
     res.json(tipos);
   } catch (error) {
     console.error('Error al obtener tipos de arreglo:', error);
-    res.status(500).json({ error: 'Error al obtener tipos de arreglo' });
+    console.error('Error completo:', JSON.stringify(error, null, 2));
+    
+    // Si es un error de Prisma, dar más detalles
+    if (error.code) {
+      console.error('Código de error Prisma:', error.code);
+    }
+    
+    res.status(500).json({ 
+      error: 'Error al obtener tipos de arreglo',
+      message: error.message,
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error.stack,
+        code: error.code 
+      })
+    });
   }
 };
 

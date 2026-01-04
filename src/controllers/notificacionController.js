@@ -10,7 +10,21 @@ export const getNotificaciones = async (req, res) => {
     res.json(notificaciones);
   } catch (error) {
     console.error('Error al obtener notificaciones:', error);
-    res.status(500).json({ error: 'Error al obtener notificaciones' });
+    console.error('Error completo:', JSON.stringify(error, null, 2));
+    
+    // Si es un error de Prisma, dar más detalles
+    if (error.code) {
+      console.error('Código de error Prisma:', error.code);
+    }
+    
+    res.status(500).json({ 
+      error: 'Error al obtener notificaciones',
+      message: error.message,
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error.stack,
+        code: error.code 
+      })
+    });
   }
 };
 
