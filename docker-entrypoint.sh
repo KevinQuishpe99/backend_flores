@@ -6,6 +6,18 @@ DB_NAME=${POSTGRES_DB:-flores_db}
 DB_USER=${POSTGRES_USER:-postgres}
 DB_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
 
+# Detectar si estamos en Render o Railway (base de datos externa)
+# Si DATABASE_URL apunta a un host externo (no localhost), saltar inicialización de PostgreSQL
+USE_EXTERNAL_DB=false
+if [ -n "$DATABASE_URL" ]; then
+    # Verificar si DATABASE_URL contiene un host que no sea localhost
+    if echo "$DATABASE_URL" | grep -qE '(dpg-|\.render\.com|\.railway\.app|\.supabase\.co|amazonaws\.com|\.azure\.com)' || \
+       ! echo "$DATABASE_URL" | grep -qE '(localhost|127\.0\.0\.1|::1)'; then
+        USE_EXTERNAL_DB=true
+        echo "🔗 Detectada base de datos externa (Render/Railway), saltando inicialización de PostgreSQL local"
+    fi
+fi
+
 # Asegurar permisos del directorio de datos
 mkdir -p "$PGDATA"
 chmod 700 "$PGDATA" || true
@@ -17,8 +29,8 @@ if ! id postgres >/dev/null 2>&1; then
     adduser -D -u 70 -G postgres postgres 2>/dev/null || true
 fi
 
-# Inicializar PostgreSQL si no existe
-if [ ! -s "$PGDATA/PG_VERSION" ]; then
+# Inicializar PostgreSQL solo si no estamos usando base de datos externa
+if [ "$USE_EXTERNAL_DB" = "false" ] && [ ! -s "$PGDATA/PG_VERSION" ]; then
     echo "Inicializando base de datos PostgreSQL..."
     # Limpiar directorio si existe pero no está inicializado correctamente
     if [ -d "$PGDATA" ] && [ ! -f "$PGDATA/PG_VERSION" ]; then
@@ -69,28 +81,38 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
     su - postgres -c "pg_ctl -D $PGDATA -m fast -w stop"
 fi
 
-# Crear directorio para archivos de lock de PostgreSQL
-mkdir -p /run/postgresql
-chown -R postgres:postgres /run/postgresql 2>/dev/null || true
+# Iniciar PostgreSQL solo si no estamos usando base de datos externa
+if [ "$USE_EXTERNAL_DB" = "false" ]; then
+    # Crear directorio para archivos de lock de PostgreSQL
+    mkdir -p /run/postgresql
+    chown -R postgres:postgres /run/postgresql 2>/dev/null || true
 
-# Iniciar PostgreSQL en background
-echo "Iniciando PostgreSQL..."
-chown -R postgres:postgres "$PGDATA" 2>/dev/null || true
-su - postgres -c "pg_ctl -D $PGDATA -o '-c listen_addresses=*' -w start"
+    # Iniciar PostgreSQL en background
+    echo "Iniciando PostgreSQL..."
+    chown -R postgres:postgres "$PGDATA" 2>/dev/null || true
+    su - postgres -c "pg_ctl -D $PGDATA -o '-c listen_addresses=*' -w start"
 
-# Esperar a que PostgreSQL esté listo
-echo "Esperando a que PostgreSQL esté listo..."
-for i in $(seq 1 30); do
-    if pg_isready -U "$DB_USER" 2>/dev/null || pg_isready -U postgres 2>/dev/null; then
-        echo "✅ PostgreSQL está listo"
-        break
-    fi
-    sleep 1
-done
+    # Esperar a que PostgreSQL esté listo
+    echo "Esperando a que PostgreSQL esté listo..."
+    for i in $(seq 1 30); do
+        if pg_isready -U "$DB_USER" 2>/dev/null || pg_isready -U postgres 2>/dev/null; then
+            echo "✅ PostgreSQL está listo"
+            break
+        fi
+        sleep 1
+    done
+else
+    echo "✅ Usando base de datos externa, PostgreSQL local no requerido"
+fi
 
 # Generar cliente de Prisma
 echo "Generando cliente de Prisma..."
-export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=public"
+# Si estamos usando base de datos externa, usar DATABASE_URL del entorno
+# Si no, construir DATABASE_URL local
+if [ "$USE_EXTERNAL_DB" = "false" ]; then
+    export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=public"
+fi
+# DATABASE_URL ya está configurado en el entorno si es externa
 npx prisma generate || true
 
 # Ejecutar migraciones de Prisma para crear las tablas

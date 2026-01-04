@@ -30,6 +30,6 @@ services:
         sync: false
 databases:
   - name: flores-db
-    databaseName: flores_db
+    databaseName: flores_db_osjg
     user: flores_user
     # Sin 'plan': Render usa instancia flexible default (free/starter equivalente)
