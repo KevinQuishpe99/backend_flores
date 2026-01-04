@@ -37,8 +37,8 @@ const allowedOrigins = NODE_ENV === 'production'
       FRONTEND_URL,
       FRONTEND_URL.replace('http://', 'https://'),
       FRONTEND_URL.replace('https://', 'http://'), // Por si acaso
-      `https://${process.env.DOMAIN || 'paulas.com'}`,
-      `http://${process.env.DOMAIN || 'paulas.com'}`,
+      `https://${process.env.DOMAIN || 'flowerspaulas.com'}`,
+      `http://${process.env.DOMAIN || 'flowerspaulas.com'}`,
     ]
   : [
       'http://localhost:5173',
