@@ -29,6 +29,9 @@ const app = express();
 const PORT = process.env.PORT || 5000; // Render/Railway usan PORT automáticamente
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Configurar trust proxy para Render/Railway (necesario para rate limiting y IPs correctas)
+app.set('trust proxy', true);
+
 // Configuración de CORS según el ambiente
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost';
 
@@ -114,11 +117,9 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      // Log solo en desarrollo para no llenar logs
-      if (NODE_ENV === 'development') {
-        console.warn(`⚠️  Origen no permitido por CORS: ${origin}`);
-        console.warn(`   Orígenes permitidos:`, allowedOrigins);
-      }
+      // Log en desarrollo y producción para debugging
+      console.warn(`⚠️  Origen no permitido por CORS: ${origin}`);
+      console.warn(`   Orígenes permitidos:`, allowedOrigins);
       callback(new Error('No permitido por CORS'));
     }
   },

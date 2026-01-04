@@ -117,6 +117,8 @@ npx prisma generate || true
 
 # Ejecutar migraciones de Prisma para crear las tablas
 echo "Ejecutando migraciones de Prisma..."
+# Si la base de datos ya tiene tablas, hacer baseline de la migration
+npx prisma migrate resolve --applied 20260104000000_init 2>/dev/null || true
 npx prisma migrate deploy || true
 
 # Ejecutar seed para crear usuario admin

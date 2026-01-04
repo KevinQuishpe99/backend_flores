@@ -6,7 +6,7 @@ services:
     instanceType: starter  # Reemplaza 'plan' obsoleto
     region: oregon
     buildCommand: npm ci && npx prisma generate
-    preDeployCommand: npx prisma migrate deploy && npx prisma db seed
+    preDeployCommand: npx prisma migrate resolve --applied 20260104000000_init 2>/dev/null || true; npx prisma migrate deploy && npx prisma db seed
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
